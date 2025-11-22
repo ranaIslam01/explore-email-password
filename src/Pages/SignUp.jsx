@@ -1,4 +1,8 @@
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import {
+  createUserWithEmailAndPassword,
+  sendEmailVerification,
+  updateProfile,
+} from "firebase/auth";
 import React, { useState } from "react";
 import { auth } from "../Auth/Auth";
 import { Eye, EyeOff } from "lucide-react";
@@ -11,10 +15,11 @@ const SignUp = () => {
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [name, setName] = useState("");
+  const [photo, setPhoto] = useState("");
   const navigate = useNavigate();
 
   const handleSignUp = (e) => {
-    
     e.preventDefault();
 
     setLoading(true);
@@ -22,10 +27,30 @@ const SignUp = () => {
     createUserWithEmailAndPassword(auth, email, password)
       .then((result) => {
         console.log(result);
-        toast.success("Successfull");
-        navigate("/login")
+
+        sendEmailVerification(auth.currentUser).then(() => {});
+
+        const profile = {
+          displayName: name,
+          photoURL: photo
+        }
+        // updateProfile 
+        updateProfile(auth.currentUser, profile)
+        .then(() => {
+          toast.success("User Profile Updated");
+        })
+        .catch((error) => {
+          toast.error("Unsuccesfull", error.message);
+        })
+
+
+        toast.success("Account created successfully");
+        toast.info("Check your email for verification link");
         setEmail("");
         setPassword("");
+        setTimeout(() => {
+          navigate("/login");
+        }, 6000);
       })
       .catch((error) => {
         console.log(error);
@@ -37,22 +62,38 @@ const SignUp = () => {
   };
 
   return (
-    <div className="flex justify-center my-20">
+    <div className="flex justify-center my-10">
       <ToastContainer></ToastContainer>
       <form
         onSubmit={handleSignUp}
-        className="flex flex-col justify-center bg-gray-300 rounded-2xl w-100 h-100 px-10 space-y-6 shadow-md"
+        className="flex flex-col justify-center bg-gray-300 rounded-2xl w-100 h-auto py-10 px-10 space-y-6 shadow-md"
       >
         <h1 className="text-center font-medium text-xl">Sign Up Form</h1>
 
         {/* Email Input */}
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          className="py-4 px-6 border border-gray-500 rounded-xl"
+          type="text"
+          required
+          placeholder="Name"
+        />
+        <input
+          value={photo}
+          onChange={(e) => setPhoto(e.target.value)}
+          className="py-4 px-6 border border-gray-500 rounded-xl"
+          type="text"
+          required
+          placeholder="Photo URL"
+        />
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           className="py-4 px-6 border border-gray-500 rounded-xl"
           type="email"
           required
-          placeholder="Enter your email"
+          placeholder="Email"
         />
 
         {/* Password Input */}
@@ -64,7 +105,7 @@ const SignUp = () => {
             type={showPassword ? "text" : "password"}
             placeholder="Password"
             pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}"
-            title="Minimum 8 characters with uppercase, lowercase and number"
+            title="Minimum 6 characters with uppercase, lowercase and number"
           />
           <button
             onClick={() => setShowPassword(!showPassword)}
@@ -83,7 +124,12 @@ const SignUp = () => {
         >
           {loading ? <BarLoader width={250} color="white" /> : "Sign Up"}
         </button>
-        <h1 className="font-semibold text-gray-500 text-center text-base">You have already account please ? <Link className="text-blue-600 " to="/login">Log In</Link></h1>
+        <h1 className="font-semibold text-gray-500 text-center text-base">
+          You have already account please ?{" "}
+          <Link className="text-blue-600 " to="/login">
+            Log In
+          </Link>
+        </h1>
       </form>
     </div>
   );

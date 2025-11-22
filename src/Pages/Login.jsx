@@ -1,4 +1,4 @@
-import { signInWithEmailAndPassword } from "firebase/auth";
+import { sendPasswordResetEmail, signInWithEmailAndPassword } from "firebase/auth";
 import { Eye, EyeOff } from "lucide-react";
 import React, { useState } from "react";
 import { auth } from "../Auth/Auth";
@@ -11,6 +11,7 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+
   const navigate = useNavigate();
 
   const handleLogin = (e) => {
@@ -20,11 +21,20 @@ const Login = () => {
 
     signInWithEmailAndPassword(auth, email, password)
       .then((result) => {
-        toast.success("Successfull");
+        if(!result.user.emailVerified){
+          toast.success("Please verify your email!");
+        }
+        else{
+          toast.success("LogIn Successfull");
+        }
         setEmail('');
         setPassword('');
         console.log(result.user);
-        navigate("/");
+        setTimeout(() => {
+          if(result.user.emailVerified){
+          navigate("/");
+        }
+        }, 1200);
       })
       .catch((error) => {
         console.log(error.message);
@@ -35,13 +45,26 @@ const Login = () => {
       })
       
   };
+
+  const handleForgotPassword = () => {
+      sendPasswordResetEmail(auth,email)
+      .then(() => {
+        toast.success("A password reset email is send, Check your email!")
+      })
+      .catch((error) => {
+        toast.error(error.message);
+      })
+
+  }
+
+
   return (
     <div className="flex justify-center my-20">
       <form
         onSubmit={handleLogin}
-        className="flex flex-col justify-center bg-gray-300 rounded-2xl w-100 h-100 px-10 space-y-6 shadow-md"
+        className="flex flex-col justify-center bg-gray-300 rounded-2xl w-100 h-100 px-10 space-y-5 shadow-md"
       >
-        <h1 className="text-center font-medium text-xl">Login Now</h1>
+        <h1 className="text-center font-semibold mt-4 text-xl">Login Now</h1>
 
         {/* Email Input */}
         <input
@@ -50,25 +73,34 @@ const Login = () => {
           value={email}
           type="email"
           placeholder="Enter your email"
+          required
         />
 
         <div className="relative">
           {/* Password Input */}
           <input
-            className="py-4 px-6 border border-gray-500 rounded-xl w-full "
-            onChange={(e) => setPassword(e.target.value)}
             value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="py-4 px-6 border border-gray-500 rounded-xl w-full"
             type={showPassword ? "text" : "password"}
-            placeholder="Enter password"
+            placeholder="Password"
+            pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{6,}"
+            title="Minimum 6 characters with uppercase, lowercase and number"
           />
           <button
-            className="absolute top-4 right-4"
+            className="absolute top-4 right-4 cursor-pointer"
             type="button"
             onClick={() => setShowPassword(!showPassword)}
           >
             {showPassword ? <EyeOff /> : <Eye />}
           </button>
         </div>
+
+        {/* forgot button  */}
+        <p 
+        className="text-gray-500 cursor-pointer underline"
+        onClick={handleForgotPassword}>Forgot password?</p>
+
 
         {/* Submit Button */}
         <button
